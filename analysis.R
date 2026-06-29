@@ -11,6 +11,7 @@ library(flextable)
 library(officer)
 library(lubridate)
 library(janitor)
+library(rvest)
 
 # load data
 
@@ -150,18 +151,91 @@ max_age <- max(bvmn_excluded$`Max Age`, na.rm = TRUE)
 minors_analysis <- bvmn_excluded %>%
   filter(minor_testimony == TRUE)
 
-min_age <- min_age
 
-## unaccompanied 
+## unaccompanied and girls 
 
 minors_analysis <- minors_analysis %>%
-  mutate(unaccompanied = str_detect(`Report Content`, regex("unaccompanied", ignore_case = TRUE)))
+  mutate(unaccompanied = str_detect(`Report Content`, regex("unaccompanied", ignore_case = TRUE)),
+         girls = str_detect(`Report Content`, regex("girl", ignore_case = TRUE)))
+
+## age range
+
+## check mannually - save the csv 
+
+write.csv(minors_analysis, "minors_analysis.csv")
 
 
-# still to do
+# word count
 
-# 1) word count
+report_content <- bvmn_excluded %>%
+  select(`Report Content`) %>%
+  mutate(report_text_cleaned = str_squish(str_remove_all(`Report Content`, "<[^>]+>")),
+         word_count = str_count(report_text_cleaned, "\\S+"))
+
+min_word_count <- min(report_content$word_count)
+max_word_count <- max(report_content$word_count)
+mean_word_count <- mean(report_content$word_count)
+median_word_count <- median(report_content$word_count)
+
+longest <- as.character(report_content[602, 2])
+
+print(longest)
+
+
 # 2) age of children in minors analysis - might be difficult because unsure if they relate to the person.
 
-  
+
+# 3) violence 
+
+bvmn_excluded$`Types of Violence Used` <- as.character(bvmn_excluded$`Types of Violence Used`)
+bvmn_excluded$`Types of Violence Used` <- tolower(bvmn_excluded$`Types of Violence Used`)
+
+beating_keywords <- c("beat", "kick", "punch", "push", "step")
+
+beating_testimonies <- bvmn_excluded %>%
+  filter(str_detect(`Types of Violence Used`, regex(str_c(beating_keywords, collapse = "|"), ignore_case = TRUE)))
+
+beating_testimonies_summary <- beating_testimonies %>%
+  group_by(pushback_to_from) %>%
+  summarise(n = n()) %>%
+  mutate(percent = round((n/sum(n) *100),1)) %>%
+  arrange(desc(n))
+
+beating_testimonies_summary <- flextable(beating_testimonies_summary)
+
+beating_testimonies_summary_doc <- read_docx()  
+beating_testimonies_summary_doc <- body_add_flextable(beating_testimonies_summary_doc, beating_testimonies_summary)                                       
+
+print(beating_testimonies_summary_doc, target = "beating_testimonies_summary.docx")
+
+violence_types <- bvmn_excluded %>%
+  select(`Types of Violence Used`) %>%
+  separate_rows(`Types of Violence Used`, sep = ",")
+
+violence_types$`Types of Violence Used` <- gsub(" ", "", violence_types$`Types of Violence Used`)
+violence_types$`Types of Violence Used` <- tolower(violence_types$`Types of Violence Used`)
+
+violence_types$`Types of Violence Used` <- as.factor(violence_types$`Types of Violence Used`)
+levels(violence_types$`Types of Violence Used`)  
+
+# dogs
+
+dog_keywords <- c("dog")
+
+dog_testimonies <- bvmn_excluded %>%
+  filter(str_detect(`Types of Violence Used`, regex(dog_keywords, ignore_case = TRUE)))
+
+dog_testimonies_summary <- dog_testimonies %>%
+  group_by(pushback_to_from) %>%
+  summarise(n = n()) %>%
+  mutate(percent = round((n/sum(n) *100),1)) %>%
+  arrange(desc(n))
+
+dog_testimonies_summary <- flextable(dog_testimonies_summary)
+
+dog_testimonies_summary_doc <- read_docx()  
+dog_testimonies_summary_doc <- body_add_flextable(dog_testimonies_summary_doc, dog_testimonies_summary)                                       
+
+print(dog_testimonies_summary_doc, target = "dog_testimonies_summary.docx")
+
 
