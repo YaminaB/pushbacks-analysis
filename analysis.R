@@ -19,7 +19,9 @@ bvmn <- read_excel("data/bvnm_datav2_compare.xls")
 
 # exclusions
 
-exclusions_all <- c(72, 205, 365, 412, 460, 569, 760, 769, 779, 786, 705, 822, 807, 858, 859, 860, 861, 862, 863, 864, 865, 866)
+exclusions_all <- c(72, 205, 365, 412, 460, 569, 760, 769, 779, 786, 705, 822, 807, 858, 859, 860, 861, 862, 863, 864, 865, 866, # didn't involve minors 
+                    818, # a duplicate (819 in original excel spreadsheet)
+                    389) # unclear that it includes minors (390 in original excel spreadsheet)
 
 # testimonies by minors
 
