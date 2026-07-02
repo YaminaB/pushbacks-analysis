@@ -16,48 +16,177 @@ library(rvest)
 # load data
 
 bvmn <- read_excel("data/bvnm_datav2_compare.xls")
+bvmn <- bvmn %>%
+  mutate(row_num = row_number(),
+         excel_row_num = row_num + 1)
+
+title_excel_row_nums <- bvmn %>%
+  select(c(Title, excel_row_num))
 
 # exclusions
 
-exclusions_all <- c(72, 205, 365, 412, 460, 569, 760, 769, 779, 786, 705, 822, 807, 858, 859, 860, 861, 862, 863, 864, 865, 866, # didn't involve minors 
-                    818, # a duplicate (819 in original excel spreadsheet)
-                    389) # unclear that it includes minors (390 in original excel spreadsheet)
+exclusions_all <- c(706, 73, 366, 413, 461, 570, 761, 770, 780, 787, 808, 206, 823, # initial exclusions post first review 
+                    77, 206, 366, 378, 380, 390, 412, 423, 461, 539, 570, 761, 859, 860, 861, 862, 863, 864, 865, 867, # exclusions post second review 
+                    819) # a duplicate 
+        
 
 # testimonies by minors
+# 2/7/26 - amended by YB to exclude additional testimonies not given by minors (4, 55, 76, 149, 373, 432, 491, 681) and add additional testimonies from migrants that were missed
+# based on this spreadsheet: https://docs.google.com/spreadsheets/d/1Fl1mKFY1QH2kyqtJeSTIsu6217HsqiwtIcn5zgiuO18/edit?gid=2027979439#gid=2027979439
 
-minors_testimonies <- c(4, 5, 9, 19, 38, 40, 42, 
-                        49, 51, 55, 65, 68, 72, 76, 
-                        77,363, 369, 372, 373, 378, 
-                        380, 391, 395, 410, 412, 420, 
-                        421, 423, 432,  448, 449, 637,  
-                        639, 640, 641, 658, 681, 685, 
-                        705, 712, 715, 716, 717, 719, 
-                        721, 727, 732, 744, 757, 764, 
-                        773, 777, 784, 793, 796, 454, 
-                        458, 459, 472, 483, 491, 517, 
-                        531, 532, 538, 539, 541, 550, 
-                        551, 595, 598, 852, 849, 614, 
-                        612, 98, 155, 131, 120, 129, 136, 
-                        147, 149, 153, 163, 176, 186, 187, 
-                        200, 212, 222, 231, 235, 254, 255, 262, 826)
-
-minors_testimonies_corrected <- minors_testimonies -1
+minors_testimonies <- c(5,9,19, 38,40,
+                        41,42,49, 51, 64,65, 
+                        68, 70,72, 77, 97,
+                        98, 101, 120,129,
+                        131,132,136,138,
+                        145,147, 148,152,
+                        153,155, 157, 160,
+                        161, 163, 166, 173, # added 173 based on Amy's email re. minor testimony queries (sent 17/06/26)
+                        176, 186, 187, 200,
+                        212,222, 231, 235,
+                        254,255, 262, 263,
+                        273,317,348,363, 
+                        369,372,378, 380, 
+                        391,395, 410, 
+                        412, 
+                        420, 
+                        421, 
+                        423, 
+                        440,
+                        448, 
+                        449,
+                        454,
+                        458,
+                        459,
+                        472,
+                        483,
+                        514,
+                        517,
+                        531,
+                        532,
+                        538,
+                        539,
+                        540,
+                        541,
+                        550, 
+                        551,
+                        595,
+                        598,
+                        612,
+                        614, 
+                        637,
+                        639, 
+                        640, 
+                        641, 
+                        658, 
+                        685, 
+                        705, 
+                        712, 
+                        715, 
+                        716,
+                        717, 
+                        719,
+                        721, 
+                        727, 
+                        732,
+                        744, 
+                        757, 
+                        764,
+                        773, 
+                        777, 
+                        784, 
+                        793, 
+                        796,  
+                        826,
+                        837,
+                        849,
+                        852)
 
 bvmn <- bvmn %>%
-  mutate(minor_testimony = row_number() %in% minors_testimonies_corrected)
+  mutate(minor_testimony = excel_row_num %in% minors_testimonies,
+         to_exclude  = excel_row_num %in% exclusions_all)
 
 # remove excluded testimonies 
 
-bvmn_excluded <- bvmn[-exclusions_all, ]
+bvmn_excluded <- bvmn %>%
+  filter(!to_exclude)
 
-# create concatenated from to variable
+# Do further exclusions post-second review by Amy and I (May/June 2026)
+
+extracted_1 <- read.csv("data/bvmn_extracted_1.csv")
+extracted_2 <- read.csv("data/bvmn_extracted_2.csv")
+extracted_3 <- read.csv("data/bvmn_extracted_3.csv")
+
+extracted_1_clean <- extracted_1 %>%
+  select(c("Title", "Pushback.From", "Pushback.To", exclude_from_master, update_country_border, Link))
+extracted_1_clean$exclude_from_master[is.na(extracted_1_clean$exclude_from_master)] <- FALSE
+extracted_1_clean$update_country_border[is.na(extracted_1_clean$update_country_border)] <- FALSE
+extracted_1_clean$extract <- 1
+extracted_1_clean <- extracted_1_clean %>%
+  mutate(extracted_excel_row_number = row_number() + 1)
+
+extracted_2_clean <- extracted_2 %>%
+  select(c("Title", "Pushback.From", "Pushback.To", exclude_from_master, update_country_border, Link))
+extracted_2_clean$exclude_from_master[is.na(extracted_2_clean$exclude_from_master)] <- FALSE
+extracted_2_clean$update_country_border[is.na(extracted_2_clean$update_country_border)] <- FALSE
+extracted_2_clean$extract <- 2
+extracted_2_clean <- extracted_2_clean %>%
+  mutate(extracted_excel_row_number = row_number() + 1)
+
+extracted_3_clean <- extracted_3 %>%
+  select(c("Title", "Pushback.From", "Pushback.To", exclude_from_master, update_country_border, Link))
+extracted_3_clean$exclude_from_master[is.na(extracted_3_clean$exclude_from_master)] <- FALSE
+extracted_3_clean$update_country_border[is.na(extracted_3_clean$update_country_border)] <- FALSE
+extracted_3_clean$extract <- 3
+extracted_3_clean <- extracted_3_clean %>%
+  mutate(extracted_excel_row_number = row_number() + 1)
+
+combined_extracted <- bind_rows(extracted_1_clean,
+                                extracted_2_clean,
+                                extracted_3_clean)
+
+combined_extracted <- combined_extracted %>%
+  mutate(Title = gsub(" ", "", Title))
+
+title_excel_row_nums <- title_excel_row_nums %>%
+  mutate(Title = gsub(" ", "", Title))
+  
+combined_extracted <- combined_extracted %>%
+  left_join(title_excel_row_nums, by  = "Title")
+
+# update country borders for those that need it 
+
+to_update_country_border <- combined_extracted %>%
+  filter(update_country_border)
 
 bvmn_excluded <- bvmn_excluded %>%
-  mutate(pushback_to_from = paste(`Pushback From`, `Pushback To`, sep = "-"))
+  mutate(Title = gsub(" ", "", Title))
 
-bvmn_excluded$pushback_to_from <- as.factor(bvmn_excluded$pushback_to_from)
+updated_country_borders <- bvmn_excluded %>%
+  inner_join(to_update_country_border, by = "Title") %>%
+  select(-c(exclude_from_master, update_country_border, `Pushback From`, `Pushback To`, excel_row_num.x,
+            extracted_excel_row_number, )) %>%
+  rename("Pushback From" = "Pushback.From",
+         "Pushback To" = "Pushback.To")
 
-summary_pushback_location <- bvmn_excluded %>%
+
+# add back into main sheet
+
+bvmn_excluded_without_rows_needing_border_updates <- bvmn_excluded %>%
+  anti_join(to_update_country_border, by = "Title")
+
+bvmn_final <- bind_rows(bvmn_excluded_without_rows_needing_border_updates,
+                        updated_country_borders)
+
+
+bvmn_final <- bvmn_final %>%
+  mutate(pushback_to_from = paste(`Pushback From`, `Pushback To`, sep = "-")) %>%
+  mutate(pushback_to_from = gsub(" ", "", pushback_to_from)) %>%
+  mutate(pushback_to_from = tolower(pushback_to_from))
+
+bvmn_final$pushback_to_from <- as.factor(bvmn_final$pushback_to_from)
+
+summary_pushback_location <- bvmn_final %>%
   group_by(pushback_to_from) %>%
   summarise(n = n()) %>%
   mutate(percent = round(n/sum(n) *100, 1)) %>%
@@ -152,6 +281,31 @@ max_age <- max(bvmn_excluded$`Max Age`, na.rm = TRUE)
 
 minors_analysis <- bvmn_excluded %>%
   filter(minor_testimony == TRUE)
+## edit border 
+
+# minors_old <- read.csv("minors_analysis.csv")
+# row_numbers <- bvmn %>%
+#   select(excel_row_num, Title)
+# minors_old_with_original_row_num <- minors_old %>%
+#   left_join(row_numbers, by = "Title")
+# minors_updated_amy <- read.csv("minors_analysis_updated_amy.csv")
+# minor_updated_with_original_row_num <- minors_updated_amy %>%
+#   left_join(row_numbers, by = "Title") 
+# minor_updated_with_original_row_num$remove[is.na(minor_updated_with_original_row_num$remove)] <- FALSE
+# 
+# minor_updated_with_row_num_with_exclusions <- minor_updated_with_original_row_num %>%
+#   filter(!remove)
+# 
+# df <- data.frame(excel_row_num = minors_testimonies)
+# write.csv(df,"excel_row_nums.csv")
+# 
+# df_extra_row_num <- df %>% anti_join(minor_updated_with_row_num_with_exclusions, by = "excel_row_num")
+# 
+# new_additions <- minor_updated_with_original_row_num %>%
+#   anti_join(minors_old_with_original_row_num, by = "Title")
+# 
+# new_additions$row_number_excel <- new_additions$original_row_num + 1
+
 
 
 ## unaccompanied and girls 
