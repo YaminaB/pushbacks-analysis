@@ -430,6 +430,16 @@ no_violence <- bvmn_final_violence %>%
 
 write.csv(no_violence, "no_violence_used_locations.csv")
 
+no_violence <- summary_pushback_location %>%
+  left_join(no_violence, by = "pushback_to_from") %>%
+  rename(no_violence = "n.y") %>%
+  rename(all_testimonies = "n.x") %>%
+  mutate(no_violence_recorded_at_border = all_testimonies == no_violence) %>%
+  mutate(no_violence_recorded_at_border = ifelse(is.na(no_violence_recorded_at_border), FALSE, no_violence_recorded_at_border))
+  
+
+write.csv(no_violence, "no_violence_used_summary.csv")
+
 
 # 
 # 
