@@ -24,24 +24,28 @@ title_excel_row_nums <- bvmn %>%
   select(c(Title, excel_row_num))
 
 # exclusions
+# Note: these row numbers are excel row numbers [R row numbers + 1 because the variable title counts as a row in excel
 
 exclusions_all <- c(706, 73, 366, 413, 461, 570, 761, 770, 780, 787, 808, 206, 823, # initial exclusions post first review 
                     77, 206, 366, 378, 380, 390, 412, 423, 461, 539, 570, 761, 859, 860, 861, 862, 863, 864, 865, 866, 867, # exclusions post second review 
-                    819) # a duplicate 
+                    819, # a duplicate 
+                    9, 40, 153, 222, 235, 421, 423, 640, 716, 717, 764, 148)  # post-ethics feedback (minors under 16)
         
+
 
 # testimonies by minors
 # 2/7/26 - amended by YB to exclude additional testimonies not given by minors (4, 55, 76, 149, 373, 432, 491, 681) and add additional testimonies from migrants that were missed
 # based on this spreadsheet: https://docs.google.com/spreadsheets/d/1Fl1mKFY1QH2kyqtJeSTIsu6217HsqiwtIcn5zgiuO18/edit?gid=2027979439#gid=2027979439
+# 15/10/26 - removed testimonies that are unclear if they are minors as we are treating these as adults (773, 161, 145, 152)
 
 minors_testimonies <- c(5,9,19, 38,40,
                         41,42,49, 51, 64,65, 
                         68, 70,72, 77, 97,
                         98, 101, 120,129,
                         131,132,136,138,
-                        145,147, 148,152,
+                        147, 148,
                         153,155, 157, 160,
-                        161, 163, 166, 173, # added 173 based on Amy's email re. minor testimony queries (sent 17/06/26)
+                        163, 166, 173, # added 173 based on Amy's email re. minor testimony queries (sent 17/06/26)
                         176, 186, 187, 200,
                         212,222, 231, 235,
                         254,255, 262, 263,
@@ -91,8 +95,7 @@ minors_testimonies <- c(5,9,19, 38,40,
                         732,
                         744, 
                         757, 
-                        764,
-                        773, 
+                        764, 
                         777, 
                         784, 
                         793, 
@@ -192,12 +195,12 @@ summary_pushback_location <- bvmn_final %>%
   mutate(percent = round(n/sum(n) *100, 1)) %>%
   arrange(desc(n))
 
-summary_pushback_location <- flextable(summary_pushback_location)
+summary_pushback_location_f <- flextable(summary_pushback_location)
 
 summary_pushback_location_doc <- read_docx()  
-summary_pushback_location_doc <- body_add_flextable(summary_pushback_location_doc, summary_pushback_location)                                       
+summary_pushback_location_doc <- body_add_flextable(summary_pushback_location_doc, summary_pushback_location_f)                                       
 
-print(summary_pushback_location_doc, target = "summary_pushback_location.docx")
+print(summary_pushback_location_doc, target = "outputs/summary_pushback_location.docx")
 
 # date analysis 
 
@@ -234,7 +237,7 @@ yearly_counts <- ggplot(summary_yearly_counts_all, aes(x = incident_year, y = n,
 
 yearly_counts
 
-ggsave("yearly_counts.png")
+ggsave("outputs/yearly_counts.png")
 
 
 # countries of origin
@@ -283,31 +286,6 @@ minors_analysis <- bvmn_final %>%
   filter(minor_testimony == TRUE)
 ## edit border 
 
-# minors_old <- read.csv("minors_analysis.csv")
-# row_numbers <- bvmn %>%
-#   select(excel_row_num, Title)
-# minors_old_with_original_row_num <- minors_old %>%
-#   left_join(row_numbers, by = "Title")
-# minors_updated_amy <- read.csv("minors_analysis_updated_amy.csv")
-# minor_updated_with_original_row_num <- minors_updated_amy %>%
-#   left_join(row_numbers, by = "Title") 
-# minor_updated_with_original_row_num$remove[is.na(minor_updated_with_original_row_num$remove)] <- FALSE
-# 
-# minor_updated_with_row_num_with_exclusions <- minor_updated_with_original_row_num %>%
-#   filter(!remove)
-# 
-# df <- data.frame(excel_row_num = minors_testimonies)
-# write.csv(df,"excel_row_nums.csv")
-# 
-# df_extra_row_num <- df %>% anti_join(minor_updated_with_row_num_with_exclusions, by = "excel_row_num")
-# 
-# new_additions <- minor_updated_with_original_row_num %>%
-#   anti_join(minors_old_with_original_row_num, by = "Title")
-# 
-# new_additions$row_number_excel <- new_additions$original_row_num + 1
-
-
-
 ## unaccompanied  
 
 minors_updated_amy <- read.csv("minors_analysis_updated_amy.csv")
@@ -323,7 +301,7 @@ minors_analysis_with_unaccompanied_status <- minors_analysis %>%
 
 minors_analysis_with_unaccompanied_status %>%
   count(unaccompanied)
-# 94 TRUE
+# 80 TRUE
 # 1 NA (this was added in Amy's second review - also not clear if unaccompanied, so false)
 
 na_unaccompanied <- minors_analysis_with_unaccompanied_status %>%
@@ -342,7 +320,7 @@ minors_analysis_girls <- minors_analysis %>%
 
 minors_analysis_girls %>%
   count(girls)
-# 5 girls 
+# 4 girls 
 # 1 with a boy and girl respondent
 # 1 NA - checked, but not a girl.
 
@@ -354,7 +332,7 @@ na_girls <- minors_analysis_girls %>%
 
 ## check mannually - save the csv 
 
-write.csv(minors_analysis, "minors_analysis.csv")
+write.csv(minors_analysis, "outputs/minors_analysis.csv")
 
 
 # word count
@@ -400,15 +378,23 @@ bvmn_final_violence_overall <- bvmn_final %>%
   mutate(`Types of Violence Used` = gsub(",\\s*", ",", `Types of Violence Used`)) %>%
   separate_rows(`Types of Violence Used`, sep = ",") %>%
   mutate(`Types of Violence Used` = tolower(gsub(" ", "", `Types of Violence Used`))) %>%
-  count(`Types of Violence Used`)
+  count(`Types of Violence Used`) %>%
+  mutate(percentage = n/825 *100) %>%
+  arrange(desc(n)) %>%
+  mutate(num_percent = paste0(n, " (", round(percentage), "%)"))
 
-write.csv(bvmn_final_violence_overall, "bvmn_final_violence_overall.csv")
+bvmn_final_violence_overall_f <- flextable(bvmn_final_violence_overall)
+
+bvmn_final_violence_overall_doc <- read_docx()  
+bvmn_final_violence_overall_doc <- body_add_flextable(bvmn_final_violence_overall_doc, bvmn_final_violence_overall_f)  
+print(bvmn_final_violence_overall_doc, target = "outputs/bvmn_final_violence_overall.docx")
+
+write.csv(bvmn_final_violence_overall, "outputs/bvmn_final_violence_overall.csv")
 
 bvmn_final_violence_by_border <- bvmn_final_violence %>%
   group_by(pushback_to_from) %>%
-  slice_max(order_by = n, n = 5)
-
-levels(bvmn_final_violence_by_border$pushback_to_from)
+  slice_max(order_by = n, n = 5) 
+  
 
 top_5_borders <- c("croatia-bosnia",
                    "greece-turkey",
@@ -421,14 +407,14 @@ bvmn_final_violence_by_border_top_5 <- bvmn_final_violence_by_border %>%
   filter(pushback_to_from %in% top_5_borders) %>%
   select(pushback_to_from, `Types of Violence Used`, n)
 
-write.csv(bvmn_final_violence_by_border_top_5, "bvmn_final_violence_by_border_top5.csv")
+write.csv(bvmn_final_violence_by_border_top_5, "outputs/bvmn_final_violence_by_border_top5.csv")
 
 # no violence recorded
 
 no_violence <- bvmn_final_violence %>%
   filter(`Types of Violence Used` == "noviolenceused")
 
-write.csv(no_violence, "no_violence_used_locations.csv")
+write.csv(no_violence, "outputs/no_violence_used_locations.csv")
 
 no_violence <- summary_pushback_location %>%
   left_join(no_violence, by = "pushback_to_from") %>%
@@ -438,64 +424,4 @@ no_violence <- summary_pushback_location %>%
   mutate(no_violence_recorded_at_border = ifelse(is.na(no_violence_recorded_at_border), FALSE, no_violence_recorded_at_border))
   
 
-write.csv(no_violence, "no_violence_used_summary.csv")
-
-
-# 
-# 
-# types_of_violence <- bvmn_final%>%
-#   count(`Types of Violence Used`)
-#   
-# 
-# bvmn_excluded$`Types of Violence Used` <- as.character(bvmn_excluded$`Types of Violence Used`)
-# bvmn_excluded$`Types of Violence Used` <- tolower(bvmn_excluded$`Types of Violence Used`)
-# 
-# beating_keywords <- c("beat", "kick", "punch", "push", "step")
-# 
-# beating_testimonies <- bvmn_excluded %>%
-#   filter(str_detect(`Types of Violence Used`, regex(str_c(beating_keywords, collapse = "|"), ignore_case = TRUE)))
-# 
-# beating_testimonies_summary <- beating_testimonies %>%
-#   group_by(pushback_to_from) %>%
-#   summarise(n = n()) %>%
-#   mutate(percent = round((n/sum(n) *100),1)) %>%
-#   arrange(desc(n))
-# 
-# beating_testimonies_summary <- flextable(beating_testimonies_summary)
-# 
-# beating_testimonies_summary_doc <- read_docx()  
-# beating_testimonies_summary_doc <- body_add_flextable(beating_testimonies_summary_doc, beating_testimonies_summary)                                       
-# 
-# print(beating_testimonies_summary_doc, target = "beating_testimonies_summary.docx")
-# 
-# violence_types <- bvmn_excluded %>%
-#   select(`Types of Violence Used`) %>%
-#   separate_rows(`Types of Violence Used`, sep = ",")
-# 
-# violence_types$`Types of Violence Used` <- gsub(" ", "", violence_types$`Types of Violence Used`)
-# violence_types$`Types of Violence Used` <- tolower(violence_types$`Types of Violence Used`)
-# 
-# violence_types$`Types of Violence Used` <- as.factor(violence_types$`Types of Violence Used`)
-# levels(violence_types$`Types of Violence Used`)  
-# 
-# # dogs
-# 
-# dog_keywords <- c("dog")
-# 
-# dog_testimonies <- bvmn_excluded %>%
-#   filter(str_detect(`Types of Violence Used`, regex(dog_keywords, ignore_case = TRUE)))
-# 
-# dog_testimonies_summary <- dog_testimonies %>%
-#   group_by(pushback_to_from) %>%
-#   summarise(n = n()) %>%
-#   mutate(percent = round((n/sum(n) *100),1)) %>%
-#   arrange(desc(n))
-# 
-# dog_testimonies_summary <- flextable(dog_testimonies_summary)
-# 
-# dog_testimonies_summary_doc <- read_docx()  
-# dog_testimonies_summary_doc <- body_add_flextable(dog_testimonies_summary_doc, dog_testimonies_summary)                                       
-# 
-# print(dog_testimonies_summary_doc, target = "dog_testimonies_summary.docx")
-# 
-# 
+write.csv(no_violence, "outputs/no_violence_used_summary.csv")
